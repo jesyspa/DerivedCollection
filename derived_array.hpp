@@ -15,12 +15,7 @@ class DerivedArray {
 
   private:
     struct Block {
-        bool active = false;
         typename std::aligned_storage<BLOCK_SIZE, ALIGNMENT>::type storage;
-
-        ~Block() {
-            destroy();
-        }
 
         const_reference operator*() const {
             return *data();
@@ -39,11 +34,6 @@ class DerivedArray {
         }
 
         void destroy() {
-            if (!active)
-                return;
-            // Needs to be in this order to prevent double destruction if the
-            // destructor throws.
-            active = false;
             data()->~T();
         }
 
@@ -72,6 +62,11 @@ class DerivedArray {
     void operator=(DerivedArray const&) = delete;
     void operator=(DerivedArray&&) = delete;
 
+    ~DerivedArray() {
+        for (std::size_t i = 0; i < used; ++i)
+            elements[i].destroy();
+    }
+
     bool empty() const {
         return !used;
     }
@@ -96,7 +91,6 @@ class DerivedArray {
     void push_back(D&& d) {
         using D_Val = typename std::remove_reference<D>::type;
         new (elements[used].data()) D_Val(std::forward<D>(d));
-        elements[used].active = true;
         used += 1;
     }
 
@@ -110,6 +104,5 @@ class DerivedArray {
         using D_Val = typename std::remove_reference<D>::type;
         elements[i].destroy();
         new (elements[i].data()) D_Val(std::forward<D>(d));
-        elements[i].active = true;
     }
 };
