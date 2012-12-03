@@ -4,6 +4,16 @@
 
 template<typename T, std::size_t MAX_ELEMENTS, std::size_t BLOCK_SIZE, std::size_t ALIGNMENT=alignof(T)>
 class DerivedArray {
+  public:
+    using value_type = T;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using reference = T&;
+    using const_reference = T const&;
+    using pointer = T*;
+    using const_pointer = T const*;
+
+  private:
     struct Block {
         bool active = false;
         typename std::aligned_storage<BLOCK_SIZE, ALIGNMENT>::type storage;
@@ -12,20 +22,20 @@ class DerivedArray {
             destroy();
         }
 
-        T const& operator*() const {
-            return *reinterpret_cast<T const*>(&storage);
+        const_reference operator*() const {
+            return *data();
         }
 
-        T& operator*() {
-            return *reinterpret_cast<T*>(&storage);
+        reference operator*() {
+            return *data();
         }
 
-        T const* operator->() const {
-            return &**this;
+        const_pointer operator->() const {
+            return data();
         }
 
-        T* operator->() {
-            return &**this;
+        pointer operator->() {
+            return data();
         }
 
         void destroy() {
@@ -34,7 +44,15 @@ class DerivedArray {
             // Needs to be in this order to prevent double destruction if the
             // destructor throws.
             active = false;
-            (*this)->~T();
+            data()->~T();
+        }
+
+        const_pointer data() const {
+            return reinterpret_cast<const_pointer>(&storage);
+        }
+
+        pointer data() {
+            return reinterpret_cast<pointer>(&storage);
         }
 
         Block() = default;
@@ -56,6 +74,10 @@ class DerivedArray {
 
     bool empty() const {
         return !used;
+    }
+
+    std::size_t max_size() const {
+        return MAX_ELEMENTS;
     }
 
     std::size_t size() const {
@@ -89,4 +111,3 @@ class DerivedArray {
         elements[used].destroy();
     }
 };
-
