@@ -76,3 +76,15 @@ BOOST_AUTO_TEST_CASE(vector_replace) {
     BOOST_CHECK_EQUAL(vector.size(), 1);
     BOOST_CHECK_EQUAL(vector[0].get_num(), 3);
 }
+
+BOOST_AUTO_TEST_CASE(vector_assign) {
+    DerivedVector<Base, sizeof(Dynamic)> vector;
+    auto ptr = std::make_shared<int>();
+    vector.push_back(Dynamic(ptr));
+    vector.push_back(Dynamic(ptr));
+    DerivedVector<Base, sizeof(Dynamic)> moved;
+    moved = std::move(vector);
+    BOOST_CHECK_EQUAL(vector.size(), 0);
+    BOOST_CHECK_EQUAL(moved.size(), 2);
+    BOOST_CHECK_EQUAL(ptr.use_count(), 3);
+}

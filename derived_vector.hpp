@@ -48,14 +48,9 @@ class DerivedVector {
 
         Block() = default;
 
-        template<typename D, typename CONSTRAINT = typename std::enable_if<std::is_base_of<T, D>::value>::type>
-        Block(D const& d) {
-            copy_construct(d);
-        }
-
-        template<typename D, typename CONSTRAINT = typename std::enable_if<std::is_base_of<T, D>::value>::type>
+        template<typename D>
         Block(D&& d) {
-            move_construct(std::move(d));
+            construct(std::forward<D>(d));
         }
 
         Block(Block&& b) : info(b.info) {
@@ -63,21 +58,23 @@ class DerivedVector {
                 info->mover(*this, b.data());
         }
 
-        Block(Block const& b) = delete;
-        void operator=(Block const&) = delete;
-        void operator=(Block&&) = delete;
-
-        template<typename D>
-        void copy_construct(D const& d) {
-            new (data()) D(d);
-            info = TypeInfoImpl<D>::get();
+        Block& operator=(Block&& b) {
+            if (this == &b)
+                return *this;
+            destroy();
+            info = b.info;
+            info->mover(*this, b.data());
+            return *this;
         }
 
+        Block(Block const& b) = delete;
+        void operator=(Block const&) = delete;
+
         template<typename D>
-        void move_construct(D&& d) {
-            auto temp_info = TypeInfoImpl<D>::get();
-            temp_info->mover(*this, &d);
-            info = temp_info;
+        void construct(D&& d) {
+            using D_Val = typename std::remove_reference<D>::type;
+            new (data()) D_Val(std::forward<D>(d));
+            info = TypeInfoImpl<D_Val>::get();
         }
 
         ~Block() {
@@ -89,7 +86,7 @@ class DerivedVector {
                 return;
             auto deleter = info->deleter;
             info = nullptr;
-            deleter(&storage);
+            deleter(data());
         }
 
         const_reference operator*() const {
@@ -128,9 +125,9 @@ class DerivedVector {
 
     DerivedVector() = default;
     DerivedVector(DerivedVector&&) = default;
+    DerivedVector& operator=(DerivedVector&&) = default;
     DerivedVector(DerivedVector const&) = delete;
     void operator=(DerivedVector const&) = delete;
-    void operator=(DerivedVector&&) = delete;
 
     bool empty() const {
         return elements.empty();
@@ -177,11 +174,6 @@ class DerivedVector {
     }
 
     template<typename D>
-    void push_back(D const& d) {
-        elements.emplace_back(d);
-    }
-
-    template<typename D>
     void push_back(D&& d) {
         elements.emplace_back(d);
     }
@@ -191,14 +183,8 @@ class DerivedVector {
     }
 
     template<typename D>
-    void reconstruct(size_type i, D const& d) {
-        elements[i].destroy();
-        elements[i].copy_construct(d);
-    }
-
-    template<typename D>
     void reconstruct(size_type i, D&& d) {
         elements[i].destroy();
-        elements[i].move_construct(std::move(d));
+        elements[i].construct(std::forward<D>(d));
     }
 };

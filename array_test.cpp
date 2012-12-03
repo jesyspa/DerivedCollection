@@ -24,6 +24,10 @@ BOOST_AUTO_TEST_CASE(array_push_back) {
     BOOST_CHECK_EQUAL(array.size(), 1);
     array.push_back(Five());
     BOOST_CHECK_EQUAL(array.size(), 2);
+    Five f;
+    array.push_back(f);
+    BOOST_CHECK_EQUAL(array.size(), 3);
+    BOOST_CHECK_EQUAL(array[2].get_num(), 5);
 }
 
 BOOST_AUTO_TEST_CASE(array_correct_virtual) {
@@ -57,4 +61,13 @@ BOOST_AUTO_TEST_CASE(array_ensure_destructors_run) {
     array.pop_back();
     array.pop_back();
     BOOST_CHECK_EQUAL(ptr.use_count(), 1);
+}
+
+BOOST_AUTO_TEST_CASE(array_reconstruct) {
+    DerivedArray<Base, 3, sizeof(Dynamic)> array;
+    auto ptr = std::make_shared<int>();
+    array.push_back(Dynamic(ptr));
+    array.reconstruct(0, Var(1));
+    BOOST_CHECK_EQUAL(ptr.use_count(), 1);
+    BOOST_CHECK_EQUAL(array[0].get_num(), 1);
 }

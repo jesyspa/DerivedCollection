@@ -93,15 +93,9 @@ class DerivedArray {
     }
 
     template<typename D>
-    void push_back(D const& d) {
-        new (&elements[used].storage) D(d);
-        elements[used].active = true;
-        used += 1;
-    }
-
-    template<typename D>
     void push_back(D&& d) {
-        new (&elements[used].storage) D(std::move(d));
+        using D_Val = typename std::remove_reference<D>::type;
+        new (elements[used].data()) D_Val(std::forward<D>(d));
         elements[used].active = true;
         used += 1;
     }
@@ -109,5 +103,13 @@ class DerivedArray {
     void pop_back() {
         used -= 1;
         elements[used].destroy();
+    }
+
+    template<typename D>
+    void reconstruct(size_type i, D&& d) {
+        using D_Val = typename std::remove_reference<D>::type;
+        elements[i].destroy();
+        new (elements[i].data()) D_Val(std::forward<D>(d));
+        elements[i].active = true;
     }
 };
