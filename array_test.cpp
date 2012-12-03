@@ -71,3 +71,13 @@ BOOST_AUTO_TEST_CASE(array_reconstruct) {
     BOOST_CHECK_EQUAL(ptr.use_count(), 1);
     BOOST_CHECK_EQUAL(array[0].get_num(), 1);
 }
+
+BOOST_AUTO_TEST_CASE(array_iterate) {
+    DerivedArray<Base, 3, sizeof(Dynamic)> array;
+    auto ptr = std::make_shared<int>(5);
+    array.push_back(Dynamic(ptr));
+    array.push_back(Five());
+    array.push_back(Var(5));
+    for (auto& e : array)
+        BOOST_CHECK_EQUAL(e.get_num(), 5);
+}

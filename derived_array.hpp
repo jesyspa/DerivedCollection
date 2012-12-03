@@ -1,20 +1,26 @@
 #pragma once
+#include <boost/iterator/indirect_iterator.hpp>
 #include <array>
 #include <type_traits>
 
 template<typename T, std::size_t MAX_ELEMENTS, std::size_t BLOCK_SIZE, std::size_t ALIGNMENT=alignof(T)>
 class DerivedArray {
+    struct Block;
+    using container_type = std::array<DerivedArray::Block, MAX_ELEMENTS>;
   public:
     using value_type = T;
-    using size_type = std::size_t;
-    using difference_type = std::ptrdiff_t;
+    using size_type = typename container_type::size_type;
+    using difference_type = typename container_type::difference_type;
     using reference = T&;
     using const_reference = T const&;
     using pointer = T*;
     using const_pointer = T const*;
+    using iterator = boost::indirect_iterator<typename container_type::iterator>;
+    using const_iterator = boost::indirect_iterator<typename container_type::const_iterator>;
 
   private:
     struct Block {
+        using element_type = T;
         typename std::aligned_storage<BLOCK_SIZE, ALIGNMENT>::type storage;
 
         const_reference operator*() const {
@@ -52,8 +58,8 @@ class DerivedArray {
         void operator=(Block&&) = delete;
     };
 
-    std::array<Block, MAX_ELEMENTS> elements;
-    std::size_t used = 0;
+    container_type elements;
+    size_type used = 0;
 
   public:
     DerivedArray() = default;
@@ -77,6 +83,30 @@ class DerivedArray {
 
     std::size_t size() const {
         return used;
+    }
+
+    const_iterator begin() const {
+        return elements.begin();
+    }
+
+    iterator begin() {
+        return elements.begin();
+    }
+
+    const_iterator cbegin() const {
+        return elements.cbegin();
+    }
+
+    const_iterator end() const {
+        return elements.end();
+    }
+
+    iterator end() {
+        return elements.end();
+    }
+
+    const_iterator cend() const {
+        return elements.cend();
     }
 
     T& operator[](std::size_t i) {

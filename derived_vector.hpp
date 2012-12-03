@@ -6,12 +6,17 @@
 template<typename T, std::size_t BLOCK_SIZE, std::size_t ALIGNMENT=alignof(T)>
 class DerivedVector {
     struct Block;
+    using container_type = std::vector<Block>;
   public:
     using value_type = T;
     using reference = T&;
     using const_reference = T const&;
     using pointer = T*;
     using const_pointer = T const*;
+    using size_type = typename container_type::size_type;
+    using difference_type = typename container_type::difference_type;
+    using iterator = boost::indirect_iterator<typename container_type::iterator>;
+    using const_iterator = boost::indirect_iterator<typename container_type::const_iterator>;
 
   private:
     struct TypeInfo {
@@ -114,15 +119,9 @@ class DerivedVector {
         }
     };
 
-    using container_type = std::vector<Block>;
     container_type elements;
 
   public:
-    using size_type = typename container_type::size_type;
-    using difference_type = typename container_type::difference_type;
-    using iterator = boost::indirect_iterator<typename container_type::iterator>;
-    using const_iterator = boost::indirect_iterator<typename container_type::const_iterator>;
-
     DerivedVector() = default;
     DerivedVector(DerivedVector&&) = default;
     DerivedVector& operator=(DerivedVector&&) = default;
